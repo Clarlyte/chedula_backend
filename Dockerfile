@@ -30,6 +30,9 @@ RUN mkdir -p /app/staticfiles /app/media /app/logs \
 # Copy project files
 COPY . /app/
 
+# Make start script executable
+RUN chmod +x /app/start.sh
+
 # Change ownership of the app directory
 RUN chown -R appuser:appuser /app
 
@@ -43,5 +46,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/api/health/ || exit 1
 
-# Default command (can be overridden in docker-compose)
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "core.asgi:application"] 
+# Default command (Railway will override this)
+CMD ["/app/start.sh"] 
