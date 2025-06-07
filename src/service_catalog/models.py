@@ -240,15 +240,7 @@ class Service(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     # Full-text search
-    search_vector = models.GeneratedField(
-        expression=SearchVector('name', weight='A') +
-                   SearchVector('brand', weight='A') +
-                   SearchVector('model', weight='A') +
-                   SearchVector('description', weight='B') +
-                   SearchVector('search_tags', weight='C'),
-        output_field=SearchVectorField(),
-        db_persist=True
-    )
+    search_vector = SearchVectorField(null=True, blank=True)
     
     class Meta:
         db_table = 'services'
@@ -274,6 +266,16 @@ class Service(models.Model):
             while Service.objects.filter(user_id=self.user_id, slug=self.slug).exists():
                 self.slug = f"{base_slug}-{counter}"
                 counter += 1
+        
+        # Update search vector
+        from django.contrib.postgres.search import SearchVector
+        self.search_vector = (
+            SearchVector('name', weight='A') +
+            SearchVector('brand', weight='A') +
+            SearchVector('model', weight='A') +
+            SearchVector('description', weight='B')
+        )
+        
         super().save(*args, **kwargs)
     
     @property

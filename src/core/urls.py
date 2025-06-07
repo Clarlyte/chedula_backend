@@ -30,6 +30,5 @@ urlpatterns = [
     # API endpoints
     path('api/', include('api.urls')),
     path('api/v1/users/', include('users.urls')),
-    path('api/v1/ai/', include('ai_assistant.urls')),
     path('api/v1/notifications/', include('notifications.urls')),
 ]

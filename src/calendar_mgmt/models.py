@@ -2,7 +2,6 @@ import uuid
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
-from django.contrib.postgres.fields import JSONField
 
 # Import Customer from the dedicated customer app
 from customer.models import Customer
@@ -168,12 +167,12 @@ class CalendarSettings(models.Model):
     show_weekends = models.BooleanField(default=True)
     
     # Sub-calendar preferences
-    visible_categories = JSONField(default=list, blank=True)  # List of category IDs to show
-    category_display_settings = JSONField(default=dict, blank=True)  # Per-category display settings
+    visible_categories = models.JSONField(default=list, blank=True)  # List of category IDs to show
+    category_display_settings = models.JSONField(default=dict, blank=True)  # Per-category display settings
     
     # Color coding preferences
     color_scheme = models.CharField(max_length=50, choices=COLOR_SCHEME_CHOICES, default='category_based')
-    custom_colors = JSONField(default=dict, blank=True)
+    custom_colors = models.JSONField(default=dict, blank=True)
     
     # Google Calendar integration
     google_calendar_enabled = models.BooleanField(default=False)
@@ -189,7 +188,7 @@ class CalendarSettings(models.Model):
         default=0.8,
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)]
     )
-    ai_notification_preferences = JSONField(default=dict, blank=True)
+    ai_notification_preferences = models.JSONField(default=dict, blank=True)
     
     # Notification preferences
     conflict_notifications = models.BooleanField(default=True)
