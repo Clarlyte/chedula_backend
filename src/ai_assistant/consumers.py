@@ -173,6 +173,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             'result': action.get('result'),
                             'timestamp': timezone.now().isoformat()
                         }))
+                        
+                        # Send ai.action.completed event for successful actions
+                        if action.get('status') == 'completed':
+                            await self.send(text_data=json.dumps({
+                                'type': 'ai.action.completed',
+                                'action_id': action.get('action_id'),
+                                'action_type': action.get('action_type'),
+                                'result': action.get('result'),
+                                'timestamp': timezone.now().isoformat()
+                            }))
+                        
+                        # Send ai.action.failed event for failed actions
+                        elif action.get('status') == 'failed':
+                            await self.send(text_data=json.dumps({
+                                'type': 'ai.action.failed',
+                                'action_id': action.get('action_id'),
+                                'action_type': action.get('action_type'),
+                                'error': action.get('message', 'Action failed'),
+                                'timestamp': timezone.now().isoformat()
+                            }))
             else:
                 await self._send_error(result.get('error', 'Failed to process message'))
                 
@@ -328,6 +348,3 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'level': event.get('level', 'info'),
             'timestamp': event.get('timestamp', timezone.now().isoformat())
         }))
-
-
-# Removed the ChatAuthMiddleware class as it was a no-op placeholder.

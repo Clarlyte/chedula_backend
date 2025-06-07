@@ -30,6 +30,13 @@ urlpatterns = [
     # API endpoints
     path('api/', include('api.urls')),
     path('api/v1/users/', include('users.urls')),
-    path('api/v1/ai/', include('ai_assistant.urls')),
     path('api/v1/notifications/', include('notifications.urls')),
+    
+    # Business Logic Apps
+    path('api/v1/service_catalog/', include('service_catalog.urls')),
+    path('api/v1/customer_mgmt/', include('customer.urls')),  # Note: app is named 'customer' but API expects 'customer_mgmt'
+    path('api/v1/calendar_mgmt/', include('calendar_mgmt.urls')),
+    path('api/v1/ai_assistant/', include('ai_assistant.urls')),
+    path('api/v1/contracts/', include('contracts.urls')),
+    path('api/v1/payments/', include('payments.urls')),
 ]
