@@ -61,6 +61,8 @@ INSTALLED_APPS = [
     "channels",
     "api",
     "users",
+    "customer",
+    "service_catalog",
     "ai_assistant",
     "calendar_mgmt",
     "contracts",
