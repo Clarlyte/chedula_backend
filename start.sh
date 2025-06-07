@@ -8,6 +8,9 @@ echo "Starting Django application..."
 # Change to the src directory where manage.py is located
 cd /app/src
 
+# Create logs directory if it doesn't exist
+mkdir -p logs
+
 # Run database migrations
 echo "Running database migrations..."
 python manage.py migrate --noinput

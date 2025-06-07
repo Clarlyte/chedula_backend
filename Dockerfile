@@ -24,7 +24,7 @@ COPY requirements.txt /app/
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Create necessary directories
-RUN mkdir -p /app/staticfiles /app/media /app/logs \
+RUN mkdir -p /app/staticfiles /app/media /app/logs /app/src/logs \
     && chown -R appuser:appuser /app
 
 # Copy project files
