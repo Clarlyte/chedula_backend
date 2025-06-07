@@ -42,7 +42,7 @@ class CustomerListCreateView(generics.ListCreateAPIView):
                     Q(last_name__icontains=search) |
                     Q(email__icontains=search) |
                     Q(phone__icontains=search) |
-                    Q(business_name__icontains=search)
+                    Q(company__icontains=search)  # Fixed: use 'company' instead of 'business_name'
                 )
             
             # Sorting
@@ -64,12 +64,12 @@ class CustomerListCreateView(generics.ListCreateAPIView):
                     'last_name': customer.last_name,
                     'email': customer.email,
                     'phone': customer.phone,
-                    'business_name': customer.business_name,
+                    'company': customer.company,  # Fixed: use 'company' instead of 'business_name'
                     'total_bookings': customer.total_bookings,
                     'total_spent': float(customer.total_spent),
                     'last_booking_date': customer.last_booking_date.isoformat() if customer.last_booking_date else None,
                     'customer_type': customer.customer_type,
-                    'loyalty_tier': customer.loyalty_tier,
+                    'status': customer.status,  # Also add status field
                     'created_at': customer.created_at.isoformat(),
                     'updated_at': customer.updated_at.isoformat()
                 })
@@ -100,7 +100,7 @@ class CustomerListCreateView(generics.ListCreateAPIView):
                 'last_name': request.data.get('last_name', ''),
                 'email': request.data.get('email', ''),
                 'phone': request.data.get('phone', ''),
-                'business_name': request.data.get('business_name', ''),
+                'company': request.data.get('company', ''),  # Fixed: use 'company' instead of 'business_name'
                 'address': request.data.get('address', ''),
                 'city': request.data.get('city', ''),
                 'state': request.data.get('state', ''),
@@ -109,7 +109,7 @@ class CustomerListCreateView(generics.ListCreateAPIView):
                 'customer_type': request.data.get('customer_type', 'individual'),
                 'preferred_contact_method': request.data.get('preferred_contact_method', 'email'),
                 'notes': request.data.get('notes', ''),
-                'marketing_consent': request.data.get('marketing_consent', False),
+                'marketing_emails': request.data.get('marketing_emails', False),  # Fixed: use actual field name
             }
             
             # Basic validation
@@ -179,7 +179,7 @@ class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):
                 'last_name': customer.last_name,
                 'email': customer.email,
                 'phone': customer.phone,
-                'business_name': customer.business_name,
+                'company': customer.company,  # Fixed: use 'company' instead of 'business_name'
                 'address': customer.address,
                 'city': customer.city,
                 'state': customer.state,
@@ -187,17 +187,14 @@ class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):
                 'country': customer.country,
                 'customer_type': customer.customer_type,
                 'preferred_contact_method': customer.preferred_contact_method,
-                'equipment_preferences': customer.equipment_preferences,
-                'rental_history_summary': customer.rental_history_summary,
                 'notes': customer.notes,
-                'marketing_consent': customer.marketing_consent,
+                'marketing_emails': customer.marketing_emails,  # Fixed: use actual field name
                 'total_bookings': customer.total_bookings,
                 'total_spent': float(customer.total_spent),
-                'lifetime_value': float(customer.lifetime_value),
                 'average_booking_value': float(customer.average_booking_value),
                 'last_booking_date': customer.last_booking_date.isoformat() if customer.last_booking_date else None,
-                'loyalty_tier': customer.loyalty_tier,
-                'referral_source': customer.referral_source,
+                'status': customer.status,
+                'source': customer.source,  # Fixed: use actual field name
                 'customer_notes': notes_data,
                 'created_at': customer.created_at.isoformat(),
                 'updated_at': customer.updated_at.isoformat()
@@ -216,10 +213,10 @@ class CustomerDetailView(generics.RetrieveUpdateDestroyAPIView):
             
             # Update fields
             updateable_fields = [
-                'first_name', 'last_name', 'email', 'phone', 'business_name',
-                'address', 'city', 'state', 'postal_code', 'country',
+                'first_name', 'last_name', 'email', 'phone', 'company',
+                'address_line_1', 'address_line_2', 'city', 'state', 'postal_code', 'country',  # Fixed: use actual field names
                 'customer_type', 'preferred_contact_method', 'notes',
-                'marketing_consent', 'equipment_preferences', 'referral_source'
+                'marketing_emails', 'source'  # Fixed: use actual field names
             ]
             
             for field in updateable_fields:
@@ -366,7 +363,7 @@ def customer_search(request):
         
         query = request.query_params.get('q', '')
         customer_type = request.query_params.get('customer_type')
-        loyalty_tier = request.query_params.get('loyalty_tier')
+        status = request.query_params.get('status')  # Fixed: use actual field name
         min_bookings = request.query_params.get('min_bookings')
         max_bookings = request.query_params.get('max_bookings')
         
@@ -378,14 +375,14 @@ def customer_search(request):
                 Q(last_name__icontains=query) |
                 Q(email__icontains=query) |
                 Q(phone__icontains=query) |
-                Q(business_name__icontains=query)
+                Q(company__icontains=query)  # Fixed: use 'company' instead of 'business_name'
             )
         
         if customer_type:
             customers = customers.filter(customer_type=customer_type)
         
-        if loyalty_tier:
-            customers = customers.filter(loyalty_tier=loyalty_tier)
+        if status:
+            customers = customers.filter(status=status)  # Fixed: use actual field name
         
         if min_bookings:
             customers = customers.filter(total_bookings__gte=min_bookings)
@@ -403,10 +400,10 @@ def customer_search(request):
                 'last_name': customer.last_name,
                 'email': customer.email,
                 'phone': customer.phone,
-                'business_name': customer.business_name,
+                'company': customer.company,  # Fixed: use 'company' instead of 'business_name'
                 'total_bookings': customer.total_bookings,
                 'total_spent': float(customer.total_spent),
-                'loyalty_tier': customer.loyalty_tier,
+                'status': customer.status,  # Also add status field
                 'last_booking_date': customer.last_booking_date.isoformat() if customer.last_booking_date else None
             })
         
@@ -443,7 +440,7 @@ def customer_stats(request):
             'total_revenue': float(customers.aggregate(Sum('total_spent'))['total_spent__sum'] or 0),
             'average_customer_value': 0,
             'customer_types': {},
-            'loyalty_tiers': {}
+            'customer_status': {}  # Fixed: use actual field name
         }
         
         if stats['total_customers'] > 0:
@@ -454,10 +451,10 @@ def customer_stats(request):
         for item in type_breakdown:
             stats['customer_types'][item['customer_type']] = item['count']
         
-        # Loyalty tier breakdown
-        tier_breakdown = customers.values('loyalty_tier').annotate(count=Count('loyalty_tier'))
-        for item in tier_breakdown:
-            stats['loyalty_tiers'][item['loyalty_tier']] = item['count']
+        # Customer status breakdown
+        status_breakdown = customers.values('status').annotate(count=Count('status'))
+        for item in status_breakdown:
+            stats['customer_status'][item['status']] = item['count']
         
         return Response(stats)
         

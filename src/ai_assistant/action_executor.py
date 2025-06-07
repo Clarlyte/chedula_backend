@@ -46,7 +46,9 @@ class ActionExecutor:
             user = SupabaseUser({'sub': user_id})
             
             # Route to appropriate handler
-            if action_type == 'create_booking':
+            if action_type == 'check_service_exists':
+                return self._handle_check_service_exists(user, parameters)
+            elif action_type == 'create_booking':
                 return self._handle_create_booking(user, parameters)
             elif action_type == 'update_booking':
                 return self._handle_update_booking(user, parameters)
@@ -283,10 +285,45 @@ class ActionExecutor:
         """Handle customer creation from AI."""
         try:
             # Extract customer data
+            email = parameters.get('email', '').strip()
+            
+            # Handle empty email to avoid unique constraint violation
+            if not email:
+                # Check if a customer with empty email already exists for this user
+                existing_empty_email = Customer.objects.filter(
+                    user_id=user.id, 
+                    email__in=['', None]
+                ).first()
+                
+                if existing_empty_email:
+                    # Update the existing customer instead of creating a new one
+                    existing_empty_email.first_name = parameters.get('first_name', parameters.get('name', ''))
+                    existing_empty_email.last_name = parameters.get('last_name', '')
+                    existing_empty_email.phone = parameters.get('phone', '')
+                    existing_empty_email.company = parameters.get('company', '')
+                    existing_empty_email.notes = parameters.get('notes', '')
+                    existing_empty_email.save()
+                    
+                    logger.info(f"AI updated existing customer {existing_empty_email.id} with no email for user {user.id}")
+                    
+                    return {
+                        'success': True,
+                        'id': str(existing_empty_email.id),
+                        'type': 'customer',
+                        'message': f'Customer {existing_empty_email.full_name} updated successfully',
+                        'data': {
+                            'id': str(existing_empty_email.id),
+                            'name': existing_empty_email.full_name,
+                            'email': existing_empty_email.email,
+                            'phone': existing_empty_email.phone,
+                            'company': existing_empty_email.company
+                        }
+                    }
+            
             customer_data = {
                 'first_name': parameters.get('first_name', parameters.get('name', '')),
                 'last_name': parameters.get('last_name', ''),
-                'email': parameters.get('email', ''),
+                'email': email,
                 'phone': parameters.get('phone', ''),
                 'company': parameters.get('company', ''),
                 'notes': parameters.get('notes', ''),
@@ -552,6 +589,70 @@ class ActionExecutor:
                 'error': f'Failed to update service: {str(e)}'
             }
     
+    def _handle_check_service_exists(self, user: SupabaseUser, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Check if a service/equipment exists in the catalog."""
+        try:
+            service_name = parameters.get('service_name', '').strip()
+            if not service_name:
+                return {
+                    'success': False,
+                    'error': 'Service name is required'
+                }
+            
+            # Search for service by name (case-insensitive)
+            services = Service.objects.filter(
+                user_id=user.id,
+                is_active=True,
+                name__icontains=service_name
+            )
+            
+            if services.exists():
+                service = services.first()
+                return {
+                    'success': True,
+                    'exists': True,
+                    'service_id': str(service.id),
+                    'service_name': service.name,
+                    'service_type': service.service_type,
+                    'message': f'Found service: {service.name}',
+                    'data': {
+                        'id': str(service.id),
+                        'name': service.name,
+                        'service_type': service.service_type,
+                        'base_price': float(service.base_price),
+                        'availability_type': service.availability_type,
+                        'quantity_available': service.quantity_available
+                    }
+                }
+            else:
+                return {
+                    'success': True,
+                    'exists': False,
+                    'service_name': service_name,
+                    'message': f'Service "{service_name}" not found in catalog',
+                    'suggestions': self._get_similar_services(user, service_name)
+                }
+                
+        except Exception as e:
+            logger.error(f"Error checking service exists: {e}")
+            return {
+                'success': False,
+                'error': f'Failed to check service: {str(e)}'
+            }
+    
+    def _get_similar_services(self, user: SupabaseUser, service_name: str) -> List[str]:
+        """Get similar service names for suggestions."""
+        try:
+            # Get all active services for the user
+            services = Service.objects.filter(
+                user_id=user.id,
+                is_active=True
+            ).values_list('name', flat=True)[:5]
+            
+            return list(services)
+        except Exception:
+            return []
+    
     def _extract_booking_data(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
         """Extract and validate booking data from AI parameters."""
         booking_data = {
@@ -571,6 +672,11 @@ class ActionExecutor:
         """Parse datetime string with timezone awareness."""
         if isinstance(datetime_str, datetime):
             return datetime_str
+        
+        # Handle None or empty strings
+        if not datetime_str:
+            logger.warning(f"Empty datetime provided, using current time")
+            return timezone.now()
         
         try:
             if datetime_str.endswith('Z'):

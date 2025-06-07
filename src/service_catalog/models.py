@@ -267,16 +267,29 @@ class Service(models.Model):
                 self.slug = f"{base_slug}-{counter}"
                 counter += 1
         
-        # Update search vector
-        from django.contrib.postgres.search import SearchVector
-        self.search_vector = (
-            SearchVector('name', weight='A') +
-            SearchVector('brand', weight='A') +
-            SearchVector('model', weight='A') +
-            SearchVector('description', weight='B')
-        )
+        # Save the object first (without search vector for new objects)
+        is_new = self.pk is None
+        if is_new:
+            # For new objects, save without updating search_vector
+            super().save(*args, **kwargs)
+        else:
+            # For existing objects, save normally
+            super().save(*args, **kwargs)
         
-        super().save(*args, **kwargs)
+        # Update search vector after the object exists in the database
+        if is_new or 'update_search_vector' in kwargs:
+            from django.contrib.postgres.search import SearchVector
+            Service.objects.filter(pk=self.pk).update(
+                search_vector=(
+                    SearchVector('name', weight='A') +
+                    SearchVector('brand', weight='A') +
+                    SearchVector('model', weight='A') +
+                    SearchVector('description', weight='B')
+                )
+            )
+            # Refresh the object to get the updated search_vector
+            if is_new:
+                self.refresh_from_db(fields=['search_vector'])
     
     @property
     def display_name(self):
