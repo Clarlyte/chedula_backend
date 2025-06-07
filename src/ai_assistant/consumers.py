@@ -328,6 +328,3 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'level': event.get('level', 'info'),
             'timestamp': event.get('timestamp', timezone.now().isoformat())
         }))
-
-
-# Removed the ChatAuthMiddleware class as it was a no-op placeholder.
